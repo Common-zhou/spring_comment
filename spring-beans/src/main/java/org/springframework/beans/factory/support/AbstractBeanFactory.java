@@ -238,10 +238,11 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	@SuppressWarnings("unchecked")
 	protected <T> T doGetBean(final String name, @Nullable final Class<T> requiredType,
 			@Nullable final Object[] args, boolean typeCheckOnly) throws BeansException {
-
+		// 不是很懂 应该是为了拼接name 将name标准化
 		final String beanName = transformedBeanName(name);
 		Object bean;
 
+		// 头一次进来 肯定是没有
 		// Eagerly check singleton cache for manually registered singletons.
 		Object sharedInstance = getSingleton(beanName);
 		if (sharedInstance != null && args == null) {
@@ -315,8 +316,13 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 				// Create bean instance.
 				if (mbd.isSingleton()) {
+					// 得到一个singleton 单例对象
+					// 此处的目的 是拿到一个单例 它传了bean的名称 和创建bean的方法。
+					// 如果在内部(beanFactory) 已经创建了bean  那么直接返回 不用再create
 					sharedInstance = getSingleton(beanName, () -> {
 						try {
+							// getSingleton方法如果判断到内部没有该bean 则调用该方法
+							// 传入beanName beanDefinition arges(参数)
 							return createBean(beanName, mbd, args);
 						}
 						catch (BeansException ex) {

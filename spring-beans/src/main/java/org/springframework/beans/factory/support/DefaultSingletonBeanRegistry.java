@@ -132,8 +132,10 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 */
 	protected void addSingleton(String beanName, Object singletonObject) {
 		synchronized (this.singletonObjects) {
+			// 将其加入一级缓存
 			this.singletonObjects.put(beanName, singletonObject);
 			this.singletonFactories.remove(beanName);
+			// 删除 几级缓存？
 			this.earlySingletonObjects.remove(beanName);
 			this.registeredSingletons.add(beanName);
 		}
@@ -201,7 +203,9 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 */
 	public Object getSingleton(String beanName, ObjectFactory<?> singletonFactory) {
 		Assert.notNull(beanName, "Bean name must not be null");
+		// 首先对其进行上锁 singletonObjects  它是用来存放创建好的实例的 是一个Map
 		synchronized (this.singletonObjects) {
+			// 双重检查锁  防止两个线程都进入这里创建了两个实例。用来保证单例的一种手段 懒加载
 			Object singletonObject = this.singletonObjects.get(beanName);
 			if (singletonObject == null) {
 				if (this.singletonsCurrentlyInDestruction) {
@@ -212,13 +216,18 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 				if (logger.isDebugEnabled()) {
 					logger.debug("Creating shared instance of singleton bean '" + beanName + "'");
 				}
+				// 开始方法之前 判断 这个bean一定没有在创建之中 否则报错
 				beforeSingletonCreation(beanName);
+				// 是否创建singleton的标志
 				boolean newSingleton = false;
 				boolean recordSuppressedExceptions = (this.suppressedExceptions == null);
 				if (recordSuppressedExceptions) {
 					this.suppressedExceptions = new LinkedHashSet<>();
 				}
+
+				// 校验完成 开始实例化对象
 				try {
+					// 调用传入的方法 即createBean方法。
 					singletonObject = singletonFactory.getObject();
 					newSingleton = true;
 				}
@@ -242,9 +251,11 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 					if (recordSuppressedExceptions) {
 						this.suppressedExceptions = null;
 					}
+					// 将beanName从set中删除
 					afterSingletonCreation(beanName);
 				}
 				if (newSingleton) {
+					// 如果是该线程创建的，则将其加入 singletonObjects 存放实例化好了的对象 beanName是键，值是bean
 					addSingleton(beanName, singletonObject);
 				}
 			}
@@ -335,7 +346,9 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 * @see #isSingletonCurrentlyInCreation
 	 */
 	protected void beforeSingletonCreation(String beanName) {
+		// 将beanName 放入正在创建中的set中
 		if (!this.inCreationCheckExclusions.contains(beanName) && !this.singletonsCurrentlyInCreation.add(beanName)) {
+			// 用异常去传递信息  让上层无法忽略  -- 一定要整体看一下spring的异常处理
 			throw new BeanCurrentlyInCreationException(beanName);
 		}
 	}

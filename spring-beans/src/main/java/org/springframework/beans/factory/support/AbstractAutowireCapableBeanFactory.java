@@ -462,12 +462,16 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		if (logger.isTraceEnabled()) {
 			logger.trace("Creating instance of bean '" + beanName + "'");
 		}
+		// 这里我不知道是什么意思 为什么要有一个mbdToUse
+		// TODO
 		RootBeanDefinition mbdToUse = mbd;
 
 		// Make sure bean class is actually resolved at this point, and
 		// clone the bean definition in case of a dynamically resolved Class
 		// which cannot be stored in the shared merged bean definition.
+		// 拿到Class字节码对象
 		Class<?> resolvedClass = resolveBeanClass(mbd, beanName);
+		// 如果字节码对象拿到了 && beanDefinition没有字节码 && beanDefinition的字节码名字不为空???????
 		if (resolvedClass != null && !mbd.hasBeanClass() && mbd.getBeanClassName() != null) {
 			mbdToUse = new RootBeanDefinition(mbd);
 			mbdToUse.setBeanClass(resolvedClass);
@@ -495,6 +499,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 
 		try {
+			// 一般的doXXX才是方法的真正入口(实现的地方)
 			Object beanInstance = doCreateBean(beanName, mbdToUse, args);
 			if (logger.isTraceEnabled()) {
 				logger.trace("Finished creating instance of bean '" + beanName + "'");
@@ -535,6 +540,10 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			instanceWrapper = this.factoryBeanInstanceCache.remove(beanName);
 		}
 		if (instanceWrapper == null) {
+			// 直接调用createBeanInstance  拿到一个beanWrapper 里面封装的有instance 还有一些其他的
+			// 该方法会根据你传入的参数 或者是@Autowired注解 来选择适合的方式实例化对象
+			// 例如 有factoryMethod就是用factory实例化
+			// 有@Autowired注解的 就用Autowired实例
 			instanceWrapper = createBeanInstance(beanName, mbd, args);
 		}
 		final Object bean = instanceWrapper.getWrappedInstance();
@@ -543,10 +552,18 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			mbd.resolvedTargetType = beanType;
 		}
 
+		// 以上将对象实例化好了 但是一些东西还没有完成
+		// 主要是有一些依赖未注入(DI)、一些方法未调用PostConstrust PreDestory
+
 		// Allow post-processors to modify the merged bean definition.
 		synchronized (mbd.postProcessingLock) {
 			if (!mbd.postProcessed) {
 				try {
+					// 依赖注入 对类中的一些属性注入
+					//  主要找到的是
+					// 生命周期的注解  @PostConstruct @PreDestory
+					// 注入的注解 @Resource
+					// 自动注入的注解 @Autowired
 					applyMergedBeanDefinitionPostProcessors(mbd, beanType, beanName);
 				}
 				catch (Throwable ex) {
@@ -1038,8 +1055,13 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * @see MergedBeanDefinitionPostProcessor#postProcessMergedBeanDefinition
 	 */
 	protected void applyMergedBeanDefinitionPostProcessors(RootBeanDefinition mbd, Class<?> beanType, String beanName) {
+		// 首先获取beanFactory中所有的beanPostProcessor
 		for (BeanPostProcessor bp : getBeanPostProcessors()) {
+			// 如果判断属于MergedBeanDefinitionPostProcessor  则调用
 			if (bp instanceof MergedBeanDefinitionPostProcessor) {
+				// 主要有几类BeanPostProcessor
+				// AutowiredAnnotationBeanPostProcessor
+				// CommonAnnotationBeanPostProcessor
 				MergedBeanDefinitionPostProcessor bdp = (MergedBeanDefinitionPostProcessor) bp;
 				bdp.postProcessMergedBeanDefinition(mbd, beanType, beanName);
 			}
@@ -1111,6 +1133,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 */
 	protected BeanWrapper createBeanInstance(String beanName, RootBeanDefinition mbd, @Nullable Object[] args) {
 		// Make sure bean class is actually resolved at this point.
+		// 这个方法主要是确定用什么构造函数来构造bean
+		// 首先拿到Class字节码对象
 		Class<?> beanClass = resolveBeanClass(mbd, beanName);
 
 		if (beanClass != null && !Modifier.isPublic(beanClass.getModifiers()) && !mbd.isNonPublicAccessAllowed()) {
@@ -1124,6 +1148,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 
 		if (mbd.getFactoryMethodName() != null) {
+			// 如果有factoryMethod这个属性的话  证明factoryMethod不为空  用factoryMethod来实例化
 			return instantiateUsingFactoryMethod(beanName, mbd, args);
 		}
 
@@ -1148,19 +1173,24 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 
 		// Candidate constructors for autowiring?
+		// 用它来找构造器上有@Autowired注解的
 		Constructor<?>[] ctors = determineConstructorsFromBeanPostProcessors(beanClass, beanName);
+		// 如果能拿到ctors 或者是模式是根据构造器自动注入 或者有构造器参数 或者参数不为空 走该方法实例化
+		// autowireConstructor  传入beanName beanDefinition ctors(构造器--有Autowired注解的) 参数
 		if (ctors != null || mbd.getResolvedAutowireMode() == AUTOWIRE_CONSTRUCTOR ||
 				mbd.hasConstructorArgumentValues() || !ObjectUtils.isEmpty(args)) {
 			return autowireConstructor(beanName, mbd, ctors, args);
 		}
 
 		// Preferred constructors for default construction?
+		// 拿到最优先的构造函数 一般是空构造函数
 		ctors = mbd.getPreferredConstructors();
 		if (ctors != null) {
 			return autowireConstructor(beanName, mbd, ctors, null);
 		}
 
 		// No special handling: simply use no-arg constructor.
+		// 无参构造
 		return instantiateBean(beanName, mbd);
 	}
 

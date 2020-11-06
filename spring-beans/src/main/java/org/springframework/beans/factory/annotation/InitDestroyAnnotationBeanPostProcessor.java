@@ -196,7 +196,9 @@ public class InitDestroyAnnotationBeanPostProcessor
 	}
 
 	private LifecycleMetadata buildLifecycleMetadata(final Class<?> clazz) {
+		//PostConstrust 注解
 		List<LifecycleElement> initMethods = new ArrayList<>();
+		// PreDestory 注解
 		List<LifecycleElement> destroyMethods = new ArrayList<>();
 		Class<?> targetClass = clazz;
 

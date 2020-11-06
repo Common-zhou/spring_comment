@@ -294,7 +294,9 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 
 	@Override
 	public void postProcessMergedBeanDefinition(RootBeanDefinition beanDefinition, Class<?> beanType, String beanName) {
+		// 寻找注解@PostConstruct @PreDestory
 		super.postProcessMergedBeanDefinition(beanDefinition, beanType, beanName);
+		// 寻找注解 @Resource
 		InjectionMetadata metadata = findResourceMetadata(beanName, beanType, null);
 		metadata.checkConfigMembers(beanDefinition);
 	}
