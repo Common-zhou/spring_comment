@@ -564,6 +564,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 					// 生命周期的注解  @PostConstruct @PreDestory
 					// 注入的注解 @Resource
 					// 自动注入的注解 @Autowired
+					// 这里没有进行注入  只是对符合条件的寻找
 					applyMergedBeanDefinitionPostProcessors(mbd, beanType, beanName);
 				}
 				catch (Throwable ex) {
