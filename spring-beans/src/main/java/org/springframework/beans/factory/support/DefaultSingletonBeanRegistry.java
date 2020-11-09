@@ -135,7 +135,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 			// 将其加入一级缓存
 			this.singletonObjects.put(beanName, singletonObject);
 			this.singletonFactories.remove(beanName);
-			// 删除 几级缓存？
+			// 删除 几级缓存？--> 二级缓存
 			this.earlySingletonObjects.remove(beanName);
 			this.registeredSingletons.add(beanName);
 		}
@@ -176,15 +176,26 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 */
 	@Nullable
 	protected Object getSingleton(String beanName, boolean allowEarlyReference) {
+		// 首先从一级缓存中拿。一级缓存中就是已经创建好的实例
 		Object singletonObject = this.singletonObjects.get(beanName);
+		// 如果为空 && beanName正在创建中 就进入
 		if (singletonObject == null && isSingletonCurrentlyInCreation(beanName)) {
+			// 加锁  应该是为了防止从二三级缓存中拿数据的时候 容器对实例创建完成
+			// 会删除一二级缓存 这样会得到一个空值 所以将其加上锁 防止上述情况
 			synchronized (this.singletonObjects) {
+				//从二级缓存中获取
 				singletonObject = this.earlySingletonObjects.get(beanName);
+				// 如果二级缓存为null 并且 允许提前暴露
 				if (singletonObject == null && allowEarlyReference) {
+					//  从三级缓存中拿
 					ObjectFactory<?> singletonFactory = this.singletonFactories.get(beanName);
+					// 如果拿到了
 					if (singletonFactory != null) {
+						// 这里我不是很懂
 						singletonObject = singletonFactory.getObject();
+						// 将其加入二级缓存
 						this.earlySingletonObjects.put(beanName, singletonObject);
+						// 删除三级缓存  是效率的问题
 						this.singletonFactories.remove(beanName);
 					}
 				}

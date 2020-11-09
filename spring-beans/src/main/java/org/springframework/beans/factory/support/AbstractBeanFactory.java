@@ -244,8 +244,15 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 		// 头一次进来 肯定是没有
 		// Eagerly check singleton cache for manually registered singletons.
+		// 首先从缓存中取
+		// 一级缓存中有(singleObjects) 直接返回
+		//			一级缓存没有 && bean正在创建中	从二级缓存中拿
+		//					二级缓存中有 直接返回
+		//						二级缓存没有 三级缓存有 && 允许提前暴露		获取实例 并调用 提前获取方法(和getSingleton时传入的doCreateBean不一样)
+		// 如果缓存中有(一、二、三) 则直接能拿到目标对象
 		Object sharedInstance = getSingleton(beanName);
 		if (sharedInstance != null && args == null) {
+			//如果是缓存中有 并且参数是null 所以呢？
 			if (logger.isTraceEnabled()) {
 				if (isSingletonCurrentlyInCreation(beanName)) {
 					logger.trace("Returning eagerly cached instance of singleton bean '" + beanName +
@@ -255,6 +262,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					logger.trace("Returning cached instance of singleton bean '" + beanName + "'");
 				}
 			}
+			// 获取factoryBean中的变量
+			// 这里的FactoryBean需要着重理解
 			bean = getObjectForBeanInstance(sharedInstance, name, beanName, null);
 		}
 
@@ -297,6 +306,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 				// Guarantee initialization of beans that the current bean depends on.
 				String[] dependsOn = mbd.getDependsOn();
+				// 拿到所有的依赖  如果依赖是对象 调用getBean方法 首先获取依赖
 				if (dependsOn != null) {
 					for (String dep : dependsOn) {
 						if (isDependent(beanName, dep)) {
@@ -319,6 +329,9 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					// 得到一个singleton 单例对象
 					// 此处的目的 是拿到一个单例 它传了bean的名称 和创建bean的方法。
 					// 如果在内部(beanFactory) 已经创建了bean  那么直接返回 不用再create
+
+					// 调用此方法去创建实例(兜兜转转)的目的 是进行一些前置的准备
+					// 比如将其加入singletonsCurrentlyInCreation  而不用将其放在createBean中去做  隔离职责
 					sharedInstance = getSingleton(beanName, () -> {
 						try {
 							// getSingleton方法如果判断到内部没有该bean 则调用该方法
