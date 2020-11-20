@@ -1789,6 +1789,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 					beanName, "Invocation of init method failed", ex);
 		}
 		if (mbd == null || !mbd.isSynthetic()) {
+			// 这里是aop的入口类 如果该对象有pointCut这类的(符合条件) 则会对其进行加强
+			// 连接点JointPoint 是所有的可能被织入增强的方法---->所有方法都是连接点
+			// 切点 PointCut 是选择在哪些方法执行 作为执行点
 			wrappedBean = applyBeanPostProcessorsAfterInitialization(wrappedBean, beanName);
 		}
 
