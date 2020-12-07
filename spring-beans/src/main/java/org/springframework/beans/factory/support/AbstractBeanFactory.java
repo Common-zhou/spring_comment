@@ -268,6 +268,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		}
 
 		else {
+			// 如果当前实例是多例且正在创建中 报错  不是很懂
+			// 框架推测它正处于一个循环依赖中
 			// Fail if we're already creating this bean instance:
 			// We're assumably within a circular reference.
 			if (isPrototypeCurrentlyInCreation(beanName)) {
@@ -326,6 +328,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 				// Create bean instance.
 				if (mbd.isSingleton()) {
+					// 如果是单例的scope
 					// 得到一个singleton 单例对象
 					// 此处的目的 是拿到一个单例 它传了bean的名称 和创建bean的方法。
 					// 如果在内部(beanFactory) 已经创建了bean  那么直接返回 不用再create
@@ -350,19 +353,24 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				}
 
 				else if (mbd.isPrototype()) {
+					// 如果是prototype的scope
 					// It's a prototype -> create a new instance.
 					Object prototypeInstance = null;
 					try {
+						// 首先将beanName加入到正在创建中的集合
 						beforePrototypeCreation(beanName);
+						// 直接创建
 						prototypeInstance = createBean(beanName, mbd, args);
 					}
 					finally {
+						// 删除容器中存的beanName
 						afterPrototypeCreation(beanName);
 					}
 					bean = getObjectForBeanInstance(prototypeInstance, name, beanName, mbd);
 				}
 
 				else {
+					// 如果是自定义scope
 					String scopeName = mbd.getScope();
 					final Scope scope = this.scopes.get(scopeName);
 					if (scope == null) {

@@ -565,6 +565,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 					// 注入的注解 @Resource
 					// 自动注入的注解 @Autowired
 					// 这里没有进行注入  只是对符合条件的寻找
+					// !!!!!!!!!!! 这里没有进行注入 只是找
 					applyMergedBeanDefinitionPostProcessors(mbd, beanType, beanName);
 				}
 				catch (Throwable ex) {
@@ -595,6 +596,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			// IOC即控制反转 所有的对象不是由自己来创建 而是由框架来创建 之后由框架注入给你的对象(DI)
 			// 除了依赖注入 还有依赖查找。
 			populateBean(beanName, mbd, instanceWrapper);
+			// 这里已经可以使用了 只是需要对后续进行一些操作
+			// 比如aware接口的调用 一些 postConstrust接口的调用
 			exposedObject = initializeBean(beanName, exposedObject, mbd);
 		}
 		catch (Throwable ex) {
@@ -636,6 +639,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		// Register bean as disposable.
 		try {
+			// 注册bean销毁时的类DisposableBeanAdapter
 			registerDisposableBeanIfNecessary(beanName, bean, mbd);
 		}
 		catch (BeanDefinitionValidationException ex) {
@@ -1776,11 +1780,15 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		Object wrappedBean = bean;
 		if (mbd == null || !mbd.isSynthetic()) {
-			// 调用PostConstructor方法  即init方法
+			// 在初始化之前需要调用的一个beanPostProcessor
+			//  这里不是aop的入口   postProcessBeforeInitialization
 			wrappedBean = applyBeanPostProcessorsBeforeInitialization(wrappedBean, beanName);
 		}
 
 		try {
+			// 调用PostConstructor方法  即init方法
+			// 首先调用的是afterPropertiesSet  对实现了InitializingBean 接口的类进行属性设置
+			// 之后调用 postConstruct 方法  init
 			invokeInitMethods(beanName, wrappedBean, mbd);
 		}
 		catch (Throwable ex) {
@@ -1792,6 +1800,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			// 这里是aop的入口类 如果该对象有pointCut这类的(符合条件) 则会对其进行加强
 			// 连接点JointPoint 是所有的可能被织入增强的方法---->所有方法都是连接点
 			// 切点 PointCut 是选择在哪些方法执行 作为执行点
+			// 这个地方可能生成代理实例 是aop的入口
 			wrappedBean = applyBeanPostProcessorsAfterInitialization(wrappedBean, beanName);
 		}
 
