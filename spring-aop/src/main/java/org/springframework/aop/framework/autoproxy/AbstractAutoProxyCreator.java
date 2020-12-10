@@ -295,6 +295,10 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	 */
 	@Override
 	public Object postProcessAfterInitialization(@Nullable Object bean, String beanName) {
+		// 校验 如果不为空 就可以对其进行尝试代理(找是否有合适的切面命中规则)
+		// 如果有 那就要进行代理
+		// 如果没有 那就不用
+		// 代理的过程是什么样的 ？
 		if (bean != null) {
 			Object cacheKey = getCacheKey(bean.getClass(), beanName);
 			if (!this.earlyProxyReferences.contains(cacheKey)) {
@@ -334,6 +338,8 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	 * @return a proxy wrapping the bean, or the raw bean instance as-is
 	 */
 	protected Object wrapIfNecessary(Object bean, String beanName, Object cacheKey) {
+		// 校验  进入任何一个方法  都要校验 保证你拿到的参数是你想要的
+		// 不要觉得传过来的参数没问题
 		if (StringUtils.hasLength(beanName) && this.targetSourcedBeans.contains(beanName)) {
 			return bean;
 		}
@@ -345,6 +351,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 			return bean;
 		}
 
+		//  找到合适的增强
 		// Create proxy if we have advice.
 		Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(bean.getClass(), beanName, null);
 		if (specificInterceptors != DO_NOT_PROXY) {
@@ -470,6 +477,9 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 			proxyFactory.setPreFiltered(true);
 		}
 
+		// 这个ProxyFactory里面 有Advisors 被代理类
+		// 使用实例调 getProxy 在内部 将proxyFactory封装到Proxy内部(放在advised中)
+		// 如果拿到的是JdkProxy 调用的方法就是Proxy.newInstance(,,,...)最后一个参数将
 		return proxyFactory.getProxy(getProxyClassLoader());
 	}
 

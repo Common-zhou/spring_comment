@@ -81,6 +81,7 @@ public class BeanFactoryAspectJAdvisorsBuilder {
 	 * @see #isEligibleBean
 	 */
 	public List<Advisor> buildAspectJAdvisors() {
+		// 首先拿到所有的@Aspect注解的类名
 		List<String> aspectNames = this.aspectBeanNames;
 
 		if (aspectNames == null) {
