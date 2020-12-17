@@ -234,6 +234,7 @@ public class DataSourceTransactionManager extends AbstractPlatformTransactionMan
 
 	@Override
 	protected Object doGetTransaction() {
+		// 这里就是事务对象 DataSourceTransactionObject 它负责持有ConnectionHolder  ConnectionHolder负责持有Connection
 		DataSourceTransactionObject txObject = new DataSourceTransactionObject();
 		txObject.setSavepointAllowed(isNestedTransactionAllowed());
 		ConnectionHolder conHolder =
