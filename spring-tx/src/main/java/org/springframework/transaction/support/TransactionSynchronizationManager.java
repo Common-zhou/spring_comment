@@ -137,6 +137,7 @@ public abstract class TransactionSynchronizationManager {
 	@Nullable
 	public static Object getResource(Object key) {
 		Object actualKey = TransactionSynchronizationUtils.unwrapResourceIfNecessary(key);
+		// 从ThreadLocal里拿出ConnectionHolder 第一次没有 如果是第二次进入切面 那就有
 		Object value = doGetResource(actualKey);
 		if (value != null && logger.isTraceEnabled()) {
 			logger.trace("Retrieved value [" + value + "] for key [" + actualKey + "] bound to thread [" +

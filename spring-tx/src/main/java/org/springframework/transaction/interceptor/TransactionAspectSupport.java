@@ -278,19 +278,20 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 	protected Object invokeWithinTransaction(Method method, @Nullable Class<?> targetClass,
 			final InvocationCallback invocation) throws Throwable {
 
-		// 这玩意是用来解析@Transactional注解的  解析里面的变量
+		// 这是拿到处理@Transactional注解的类 它负责封装注解该注解
 		// If the transaction attribute is null, the method is non-transactional.
 		TransactionAttributeSource tas = getTransactionAttributeSource();
 
-		// 这就是 @Transactional注解里面的值
+		// 这个就是拿到的Transactional注解类
 		final TransactionAttribute txAttr = (tas != null ? tas.getTransactionAttribute(method, targetClass) : null);
 
-		// 根据@Transcational注解 拿transactionManager
+		// 事务管理类  获取它
 		final PlatformTransactionManager tm = determineTransactionManager(txAttr);
 		final String joinpointIdentification = methodIdentification(method, targetClass, txAttr);
 
 		if (txAttr == null || !(tm instanceof CallbackPreferringPlatformTransactionManager)) {
-			// 创建一个事务  如果需要 也就是在这里会开启事务(如果有的话)
+			// 创建一个事务信息对象 每次进来都要创建它  ？？？？
+			// 这里就是 首先拿到一个事务
 			// Standard transaction demarcation with getTransaction and commit/rollback calls.
 			TransactionInfo txInfo = createTransactionIfNecessary(tm, txAttr, joinpointIdentification);
 			Object retVal = null;
@@ -477,7 +478,7 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 		TransactionStatus status = null;
 		if (txAttr != null) {
 			if (tm != null) {
-				// 这里就是开启一个事务
+				// 这里是创建事务对象  重点看
 				status = tm.getTransaction(txAttr);
 			}
 			else {

@@ -237,8 +237,13 @@ public class DataSourceTransactionManager extends AbstractPlatformTransactionMan
 		// 这里就是事务对象 DataSourceTransactionObject 它负责持有ConnectionHolder  ConnectionHolder负责持有Connection
 		DataSourceTransactionObject txObject = new DataSourceTransactionObject();
 		txObject.setSavepointAllowed(isNestedTransactionAllowed());
+		// 从ThreadLocal里面拿一下ConnectionHolder 其实它就是Connection
 		ConnectionHolder conHolder =
 				(ConnectionHolder) TransactionSynchronizationManager.getResource(obtainDataSource());
+
+		// 如果是第一次进入 ConnectionHolder是null
+		// 如果是第二次进入 ConnectionHolder有值  但是它对于本地来说 不是一个新的Connection
+		// 区别它是否为新的Connection 主要的作用是 是否提交 是否回滚
 		txObject.setConnectionHolder(conHolder, false);
 		return txObject;
 	}
@@ -258,6 +263,7 @@ public class DataSourceTransactionManager extends AbstractPlatformTransactionMan
 		Connection con = null;
 
 		try {
+			// 如果没有ConnectionHolder 则新拿出一条Connection
 			if (!txObject.hasConnectionHolder() ||
 					txObject.getConnectionHolder().isSynchronizedWithTransaction()) {
 				Connection newCon = obtainDataSource().getConnection();
@@ -294,6 +300,8 @@ public class DataSourceTransactionManager extends AbstractPlatformTransactionMan
 
 			// Bind the connection holder to the thread.
 			if (txObject.isNewConnectionHolder()) {
+				// 如果是新获得的Connection 那么将其绑定到ThreadLoca
+				// 这里要注意它的位置 它是在都设置完了之后再放入的
 				TransactionSynchronizationManager.bindResource(obtainDataSource(), txObject.getConnectionHolder());
 			}
 		}

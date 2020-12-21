@@ -340,6 +340,8 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 	@Override
 	public final TransactionStatus getTransaction(@Nullable TransactionDefinition definition) throws TransactionException {
 		// 新建一个事务 事务对象永远是新的 只是区别于拿到的Connection是否是之前的
+		// hh  这里是创建事务对象的地方 每一次进来都会创建一个
+		// 根据事务传播属性 来判断 它(事务对象)是采用之前的connection还是重新获得connection
 		Object transaction = doGetTransaction();
 
 		// Cache debug flag to avoid repeated checks.
@@ -350,7 +352,8 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 			definition = new DefaultTransactionDefinition();
 		}
 
-		// 如果是已经存在的
+		// 判断是否已经存在一个Transaction
+		// 判断条件是 如果ConnectionHolder!= null && ConnectionHolder.isActive()
 		if (isExistingTransaction(transaction)) {
 			// Existing transaction found -> check propagation behavior to find out how to behave.
 			return handleExistingTransaction(definition, transaction, debugEnabled);
@@ -366,6 +369,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 			throw new IllegalTransactionStateException(
 					"No existing transaction found for transaction marked with propagation 'mandatory'");
 		}
+		// 第一次进来 大部分会走这里  都是新建一个ConnectionHolder(Connection)
 		else if (definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_REQUIRED ||
 				definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_REQUIRES_NEW ||
 				definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_NESTED) {
@@ -375,8 +379,11 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 			}
 			try {
 				boolean newSynchronization = (getTransactionSynchronization() != SYNCHRONIZATION_NEVER);
+				// 这里创建一个TransactionStatus 它的newTransaction 是true
 				DefaultTransactionStatus status = newTransactionStatus(
 						definition, transaction, true, newSynchronization, debugEnabled, suspendedResources);
+				// 开启事务 如果没有ConnectionHolder 拿Connection
+				// 将Connection放入ThreadLocal中
 				doBegin(transaction, definition);
 				prepareSynchronization(status, definition);
 				return status;
