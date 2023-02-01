@@ -95,7 +95,9 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	 */
 	public AnnotationConfigApplicationContext(String... basePackages) {
 		this();
+		// 扫描指定包。把里面带spring注解的，包装成beanDefinition
 		scan(basePackages);
+		// 核心代码
 		refresh();
 	}
 

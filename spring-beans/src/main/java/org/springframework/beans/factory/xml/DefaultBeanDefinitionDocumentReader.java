@@ -146,6 +146,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 		}
 
 		preProcessXml(root);
+		// 主要看这个方法  这个是解析xml的过程
 		parseBeanDefinitions(root, this.delegate);
 		postProcessXml(root);
 
@@ -172,10 +173,13 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 				Node node = nl.item(i);
 				if (node instanceof Element) {
 					Element ele = (Element) node;
+
+					// 如果是自定义的标签。  通过uri判断 http://www.springframework.org/schema/beans
 					if (delegate.isDefaultNamespace(ele)) {
 						parseDefaultElement(ele, delegate);
 					}
 					else {
+						// 这是自定义的标签
 						delegate.parseCustomElement(ele);
 					}
 				}

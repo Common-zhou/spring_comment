@@ -122,6 +122,7 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 	 */
 	@Override
 	protected final void refreshBeanFactory() throws BeansException {
+		// 如果当前有BeanFactory 直接先销毁掉之前的
 		if (hasBeanFactory()) {
 			destroyBeans();
 			closeBeanFactory();
@@ -129,7 +130,10 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 		try {
 			DefaultListableBeanFactory beanFactory = createBeanFactory();
 			beanFactory.setSerializationId(getId());
+			// 对一些beanFactory的参数进行设置。比如是否允许覆盖，是否允许循环依赖。
 			customizeBeanFactory(beanFactory);
+			// 加载BeanDefinition。什么是BeanDefinition呢？就是我们注册进Spring的bean。会把它的很多信息先封装到BeanDefinition。
+			// 等到最后的时候再开始实例化。 相当于是保存bean的原始信息的。
 			loadBeanDefinitions(beanFactory);
 			synchronized (this.beanFactoryMonitor) {
 				this.beanFactory = beanFactory;
@@ -223,9 +227,11 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 	 */
 	protected void customizeBeanFactory(DefaultListableBeanFactory beanFactory) {
 		if (this.allowBeanDefinitionOverriding != null) {
+			// 设置是否允许bean覆盖：就是有同样name的 beanDefinition可以覆盖之前存在过的。默认是true
 			beanFactory.setAllowBeanDefinitionOverriding(this.allowBeanDefinitionOverriding);
 		}
 		if (this.allowCircularReferences != null) {
+			// 设置是否允许循环依赖。默认是true
 			beanFactory.setAllowCircularReferences(this.allowCircularReferences);
 		}
 	}
